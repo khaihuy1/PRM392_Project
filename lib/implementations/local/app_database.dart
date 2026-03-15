@@ -14,164 +14,191 @@ class AppDatabase {
 
   Future<Database> _open() async {
     final dbPath = await getDatabasesPath();
-    final path = join(dbPath, 'medical_booking.db');
+    // Lưu ý: Nếu muốn reset data, hãy đổi tên file này (vd: medical_v2.db)
+    // hoặc gỡ app cài lại.
+    final path = join(dbPath, 'medical_booking_final.db');
 
     return openDatabase(
       path,
       version: 1,
       onCreate: (Database db, int version) async {
-        // USERS
+        print("--- ĐANG KHỞI TẠO CƠ SỞ DỮ LIỆU ---");
+
+        // 1. USERS
         await db.execute('''
-        CREATE TABLE users(
-          user_id INTEGER PRIMARY KEY AUTOINCREMENT,
-          full_name TEXT NOT NULL,
-          email TEXT UNIQUE,
-          phone_number TEXT,
-          password_hash TEXT,
-          role TEXT,
-          created_at TEXT DEFAULT CURRENT_TIMESTAMP
-        );
+          CREATE TABLE users(
+            user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            full_name TEXT NOT NULL,
+            email TEXT UNIQUE,
+            phone_number TEXT,
+            password_hash TEXT,
+            role TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+          );
         ''');
 
-        // PATIENT PROFILES
+        // 2. PATIENT PROFILES
         await db.execute('''
-        CREATE TABLE patient_profiles(
-          profile_id INTEGER PRIMARY KEY AUTOINCREMENT,
-          user_id INTEGER,
-          full_name TEXT,
-          relationship TEXT,
-          dob TEXT,
-          FOREIGN KEY(user_id) REFERENCES users(user_id)
-        );
+          CREATE TABLE patient_profiles(
+            profile_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            full_name TEXT,
+            gender TEXT,
+            relationship TEXT,
+            dob TEXT,
+            phone_number TEXT,
+            FOREIGN KEY(user_id) REFERENCES users(user_id)
+          );
         ''');
 
-        // SPECIALTIES
+        // 3. SPECIALTIES
         await db.execute('''
-        CREATE TABLE specialties(
-          specialty_id INTEGER PRIMARY KEY AUTOINCREMENT,
-          name TEXT NOT NULL,
-          description TEXT
-        );
+          CREATE TABLE specialties(
+            specialty_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            description TEXT
+          );
         ''');
 
-        // CLINICS
+        // 4. CLINICS
         await db.execute('''
-        CREATE TABLE clinics(
-          clinic_id INTEGER PRIMARY KEY AUTOINCREMENT,
-          name TEXT,
-          address TEXT
-        );
+          CREATE TABLE clinics(
+            clinic_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT,
+            phone_number TEXT,
+            operating_hours TEXT,
+            address TEXT
+          );
         ''');
 
-        // DOCTORS
+        // 5. DOCTORS
         await db.execute('''
-        CREATE TABLE doctors(
-          doctor_id INTEGER PRIMARY KEY AUTOINCREMENT,
-          user_id INTEGER,
-          specialty_id INTEGER,
-          clinic_id INTEGER,
-          bio TEXT,
-          experience_years INTEGER,
-          rating REAL,
-          FOREIGN KEY(user_id) REFERENCES users(user_id),
-          FOREIGN KEY(specialty_id) REFERENCES specialties(specialty_id),
-          FOREIGN KEY(clinic_id) REFERENCES clinics(clinic_id)
-        );
+          CREATE TABLE doctors(
+            doctor_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            specialty_id INTEGER,
+            clinic_id INTEGER,
+            bio TEXT,
+            experience_years INTEGER,
+            rating REAL,
+            price INTEGER DEFAULT 0,
+            FOREIGN KEY(user_id) REFERENCES users(user_id),
+            FOREIGN KEY(specialty_id) REFERENCES specialties(specialty_id),
+            FOREIGN KEY(clinic_id) REFERENCES clinics(clinic_id)
+          );
         ''');
 
-        // SCHEDULES
+        // 6. SCHEDULES
         await db.execute('''
-        CREATE TABLE schedules(
-          schedule_id INTEGER PRIMARY KEY AUTOINCREMENT,
-          doctor_id INTEGER,
-          available_date TEXT,
-          start_time TEXT,
-          end_time TEXT,
-          FOREIGN KEY(doctor_id) REFERENCES doctors(doctor_id)
-        );
+          CREATE TABLE schedules(
+            schedule_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            doctor_id INTEGER,
+            available_date TEXT,
+            start_time TEXT,
+            end_time TEXT,
+            FOREIGN KEY(doctor_id) REFERENCES doctors(doctor_id)
+          );
         ''');
 
-        // TIME SLOTS
+        // 7. TIME SLOTS
         await db.execute('''
-        CREATE TABLE time_slots(
-          slot_id INTEGER PRIMARY KEY AUTOINCREMENT,
-          schedule_id INTEGER,
-          start_time TEXT,
-          end_time TEXT,
-          is_booked INTEGER DEFAULT 0,
-          FOREIGN KEY(schedule_id) REFERENCES schedules(schedule_id)
-        );
+          CREATE TABLE time_slots(
+            slot_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            schedule_id INTEGER,
+            start_time TEXT,
+            end_time TEXT,
+            is_booked INTEGER DEFAULT 0,
+            FOREIGN KEY(schedule_id) REFERENCES schedules(schedule_id)
+          );
         ''');
 
-        // APPOINTMENTS
+        // 8. APPOINTMENTS
         await db.execute('''
-        CREATE TABLE appointments(
-          appointment_id INTEGER PRIMARY KEY AUTOINCREMENT,
-          patient_id INTEGER,
-          doctor_id INTEGER,
-          slot_id INTEGER,
-          profile_id INTEGER,
-          reason TEXT,
-          status TEXT,
-          created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY(patient_id) REFERENCES users(user_id),
-          FOREIGN KEY(doctor_id) REFERENCES doctors(doctor_id),
-          FOREIGN KEY(slot_id) REFERENCES time_slots(slot_id),
-          FOREIGN KEY(profile_id) REFERENCES patient_profiles(profile_id)
-        );
+          CREATE TABLE appointments(
+            appointment_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            patient_id INTEGER,
+            doctor_id INTEGER,
+            slot_id INTEGER,
+            profile_id INTEGER,
+            reason TEXT,
+            status TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(patient_id) REFERENCES users(user_id),
+            FOREIGN KEY(doctor_id) REFERENCES doctors(doctor_id),
+            FOREIGN KEY(slot_id) REFERENCES time_slots(slot_id),
+            FOREIGN KEY(profile_id) REFERENCES patient_profiles(profile_id)
+          );
         ''');
 
-        // REVIEWS
-        await db.execute('''
-        CREATE TABLE reviews(
-          review_id INTEGER PRIMARY KEY AUTOINCREMENT,
-          appointment_id INTEGER,
-          rating INTEGER,
-          comment TEXT,
-          created_at TEXT,
-          FOREIGN KEY(appointment_id) REFERENCES appointments(appointment_id)
-        );
-        ''');
-
-        // NOTIFICATIONS
-        await db.execute('''
-        CREATE TABLE notifications(
-          notification_id INTEGER PRIMARY KEY AUTOINCREMENT,
-          user_id INTEGER,
-          title TEXT,
-          message TEXT,
-          is_read INTEGER DEFAULT 0,
-          created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY(user_id) REFERENCES users(user_id)
-        );
-        ''');
-
-        // MEDICAL RECORDS
-        await db.execute('''
-        CREATE TABLE medical_records(
-          record_id INTEGER PRIMARY KEY AUTOINCREMENT,
-          appointment_id INTEGER,
-          diagnosis TEXT,
-          prescription TEXT,
-          notes TEXT,
-          FOREIGN KEY(appointment_id) REFERENCES appointments(appointment_id)
-        );
-        ''');
-
-        // Seed admin user
-        await db.insert('users', {
-          'full_name': 'Admin',
-          'email': 'admin@gmail.com',
-          'password_hash': '123456',
-          'role': 'Admin',
-        });
-      },
-
-      onUpgrade: (Database db, int oldVersion, int newVersion) async {
-        if (oldVersion < newVersion) {
-          // Handle migrations later
-        }
+        // Gọi hàm nạp dữ liệu mẫu sau khi tạo bảng xong
+        await _seedData(db);
       },
     );
+  }
+
+  // ===================== HÀM NẠP DỮ LIỆU MẪU (SEED DATA) =====================
+  Future<void> _seedData(Database db) async {
+    print("--- ĐANG NẠP DỮ LIỆU MẪU ---");
+
+    // 1. Chèn Users
+    await db.insert('users', {'full_name': 'Admin System', 'email': 'admin@clinic.com', 'role': 'Admin'});
+    await db.insert('users', {'full_name': 'Khai Huy', 'email': 'khaihuy@student.com', 'role': 'Patient'}); // id: 2
+    await db.insert('users', {'full_name': 'Bác sĩ Lê Mạnh Hùng', 'role': 'Doctor'}); // id: 3
+    await db.insert('users', {'full_name': 'Bác sĩ Phạm Minh Anh', 'role': 'Doctor'}); // id: 4
+
+    // 2. Chèn Hồ sơ bệnh nhân (Cho bước 5)
+    await db.insert('patient_profiles', {
+      'user_id': 2,
+      'full_name': 'Khai Huy (Bản thân)',
+      'gender': 'Nam',
+      'relationship': 'Bản thân',
+      'dob': '2002-10-20',
+      'phone_number': '0912345678'
+    });
+    await db.insert('patient_profiles', {
+      'user_id': 2,
+      'full_name': 'Trần Thị Em',
+      'gender': 'Nữ',
+      'relationship': 'Em gái',
+      'dob': '2010-05-12',
+      'phone_number': '0988888888'
+    });
+
+    // 3. Chèn Chuyên khoa (Cho bước 1)
+    await db.insert('specialties', {'name': 'Nội Tổng Quát', 'description': 'Khám sàng lọc, tư vấn sức khỏe tổng thể'});
+    await db.insert('specialties', {'name': 'Tim Mạch', 'description': 'Chuyên khoa về tim và huyết áp'});
+    await db.insert('specialties', {'name': 'Nhi Khoa', 'description': 'Chăm sóc sức khỏe toàn diện cho trẻ em'});
+
+    // 4. Chèn Phòng khám (Cho bước 2)
+    await db.insert('clinics', {'name': 'Phòng khám Đa khoa Quốc tế', 'address': '456 Võ Văn Kiệt, Quận 1', 'operating_hours': '08:00 - 20:00'});
+    await db.insert('clinics', {'name': 'Bệnh viện Vinmec', 'address': '208 Nguyễn Hữu Cảnh, Bình Thạnh', 'operating_hours': '24/7'});
+
+    // 5. Chèn Bác sĩ (Cho bước 3)
+    // BS Hùng - Nội khoa (id:1) - PK Quốc tế (id:1)
+    await db.insert('doctors', {
+      'user_id': 3, 'specialty_id': 1, 'clinic_id': 1,
+      'bio': '15 năm kinh nghiệm tại BV Bạch Mai', 'experience_years': 15, 'rating': 4.9, 'price': 300000
+    });
+    // BS Minh Anh - Nhi khoa (id:3) - BV Vinmec (id:2)
+    await db.insert('doctors', {
+      'user_id': 4, 'specialty_id': 3, 'clinic_id': 2,
+      'bio': 'Chuyên gia tâm lý và sức khỏe nhi nhi', 'experience_years': 8, 'rating': 4.7, 'price': 500000
+    });
+
+    // 6. Chèn Lịch khám & Khung giờ (Cho bước 4)
+    // Tạo lịch cho BS Hùng ngày 20/03/2026
+    int schId = await db.insert('schedules', {
+      'doctor_id': 1, 'available_date': '2026-03-20', 'start_time': '08:00', 'end_time': '12:00'
+    });
+
+    // Tạo các slot giờ (mỗi slot 30 phút)
+    List<String> hours = ['08:00', '08:30', '09:00', '09:30', '10:00', '10:30'];
+    for (String h in hours) {
+      await db.insert('time_slots', {
+        'schedule_id': schId, 'start_time': h, 'end_time': '', 'is_booked': 0
+      });
+    }
+
+    print("--- TẤT CẢ DỮ LIỆU ĐÃ SẴN SÀNG ĐỂ TEST ---");
   }
 }

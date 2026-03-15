@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:projectnhom/views/select_doctor/select_specialty_screen.dart';
+import 'package:projectnhom/views/booking_schedule/select_specialty_screen.dart';
+import 'package:projectnhom/views/main_screen.dart';
 
 class HeroSection extends StatelessWidget {
   const HeroSection({super.key});
@@ -33,14 +34,15 @@ class HeroSection extends StatelessWidget {
             width: 250,
             height: 50,
             child: ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const SelectSpecialtyScreen(),
-                  ),
-                );
-              },
+                onPressed: () {
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const MainScreen(userId: 2, initialIndex: 1), // Nhảy vào Tab 1 (Đặt lịch)
+                    ),
+                        (route) => false, // Xóa hết các trang cũ để tránh bị lỗi nút quay lại
+                  );
+                },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF2962FF),
                 shape: RoundedRectangleBorder(

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:projectnhom/views/contact_info_section.dart';
 import 'package:projectnhom/views/feature_section.dart';
 import 'package:projectnhom/views/header.dart';
 import 'package:projectnhom/views/hero_section.dart';
@@ -22,7 +21,6 @@ class LandingPage extends StatelessWidget {
             SizedBox(height: 60),
             FeaturesSection(),
             SizedBox(height: 80),
-            ContactInfoSection(),
           ],
         ),
       ),
