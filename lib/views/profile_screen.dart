@@ -132,6 +132,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       _userData?['email'] ?? '',
                       style: const TextStyle(color: Colors.white70, fontSize: 16),
                     ),
+                    Text(
+                      'Vai trò: ${_userData?['role'] ?? 'Patient'}',
+                      style: const TextStyle(color: Colors.white60, fontSize: 14),
+                    ),
                   ] else ...[
                     const Text('Đang chỉnh sửa...', style: TextStyle(color: Colors.white70)),
                   ]
@@ -166,8 +170,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       const Divider(),
                       _buildStaticRow(Icons.email, 'Email', _userData?['email'] ?? 'N/A'),
-                      const Divider(),
-                      _buildStaticRow(Icons.badge, 'Vai trò', _userData?['role'] ?? 'Bệnh nhân'),
                     ],
                   ),
                 ),
@@ -233,6 +235,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
               ),
+            const SizedBox(height: 20),
           ],
         ),
       ),
