@@ -1,18 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:projectnhom/views/appointment/appointment_list_screen.dart';
-import 'landing_page.dart';
+import 'package:projectnhom/views/landing_page.dart';
+import 'package:projectnhom/views/profile_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'booking_schedule/select_specialty_screen.dart';
-import 'profile_screen.dart';
 
 class MainScreen extends StatefulWidget {
-  final int userId;
+  final int userId; // Nhận userId được truyền từ trang Login
   final int initialIndex;
 
-  const MainScreen({
-    super.key,
-    required this.userId,
-    this.initialIndex = 0,
-  });
+  const MainScreen({super.key, required this.userId, this.initialIndex = 0});
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -20,6 +17,7 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   late int _currentIndex;
+
   late List<Widget> _pages;
 
   @override
@@ -27,10 +25,13 @@ class _MainScreenState extends State<MainScreen> {
     super.initState();
     _currentIndex = widget.initialIndex;
 
+    // Khởi tạo danh sách các trang bằng userId động từ widget
     _pages = [
       const LandingPage(),
-      SelectSpecialtyScreen(),
-      const AppointmentListScreen(userId: 2), // Tạm thời để cứng ID 2 theo code cũ của bạn
+      const SelectSpecialtyScreen(),
+      // Nhớ truyền userId vào đây nếu trang này cần
+      AppointmentListScreen(userId: widget.userId),
+      // Đã thay số 2 bằng userId thật
       ProfileScreen(userId: widget.userId),
     ];
   }
@@ -38,10 +39,7 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _pages,
-      ),
+      body: IndexedStack(index: _currentIndex, children: _pages),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: _currentIndex,

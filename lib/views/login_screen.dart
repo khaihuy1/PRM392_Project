@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../implementations/local/app_database.dart';
 import 'main_screen.dart';
 import 'register_screen.dart';
@@ -39,8 +40,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (users.isNotEmpty) {
         final user = users.first;
+
+        // --- LƯU USER_ID VÀO BỘ NHỚ MÁY TẠI ĐÂY ---
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setInt('user_id', user['user_id']);
+        // ------------------------------------------
+
         if (!mounted) return;
-        
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -142,7 +149,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   _buildLabel('Email *'),
                   TextField(
                     controller: _emailController,
-                    decoration: _inputDecoration('Nhập email (vd: khaihuy@student.com)'),
+                    decoration: _inputDecoration('Nhập email '),
                   ),
                   const SizedBox(height: 16),
 
@@ -150,7 +157,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   TextField(
                     controller: _passwordController,
                     obscureText: true,
-                    decoration: _inputDecoration('Nhập mật khẩu (vd: 123456)'),
+                    decoration: _inputDecoration('Nhập mật khẩu '),
                   ),
 
                   Align(

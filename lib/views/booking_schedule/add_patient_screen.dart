@@ -90,7 +90,7 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
   Future<void> _submitData() async {
     if (_formKey.currentState!.validate()) {
       final newProfile = PatientProfile(
-        userId: widget.userId, // ID của user đang đăng nhập (Khai Huy)
+        userId: widget.userId,
         fullName: _nameController.text,
         relationship: _selectedRelation,
         gender: _selectedGender,
