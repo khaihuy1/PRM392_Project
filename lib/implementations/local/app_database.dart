@@ -24,17 +24,22 @@ class AppDatabase {
         print("--- ĐANG KHỞI TẠO CƠ SỞ DỮ LIỆU ---");
 
         // 1. USERS
+        // 1. USERS
         await db.execute('''
-          CREATE TABLE users(
-            user_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            full_name TEXT NOT NULL,
-            email TEXT UNIQUE,
-            phone_number TEXT,
-            password_hash TEXT,
-            role TEXT,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP
-          );
-        ''');
+  CREATE TABLE users(
+    user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    full_name TEXT NOT NULL,
+    email TEXT UNIQUE,
+    phone_number TEXT,
+    password_hash TEXT,
+    role TEXT,
+    ethnicity TEXT,       -- Thêm cột dân tộc
+    city TEXT,            -- Thêm cột thành phố
+    ward TEXT,            -- Thêm cột phường/xã
+    detail_address TEXT,  -- Thêm cột địa chỉ chi tiết
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  );
+''');
 
         // 2. PATIENT PROFILES
         await db.execute('''
@@ -46,6 +51,7 @@ class AppDatabase {
             relationship TEXT,
             dob TEXT,
             phone_number TEXT,
+            diagnosis TEXT, -- Đảm bảo có dòng này!
             FOREIGN KEY(user_id) REFERENCES users(user_id)
           );
         ''');
@@ -142,28 +148,28 @@ class AppDatabase {
       'full_name': 'Admin System',
       'email': 'admin@clinic.com',
       'password_hash': '123456',
-      'role': 'Admin'
+      'role': 'Admin',
     });
-    
+
     await db.insert('users', {
       'full_name': 'Khai Huy',
       'email': 'khaihuy@student.com',
       'password_hash': '123456',
-      'role': 'Patient'
+      'role': 'Patient',
     }); // id: 2
 
     await db.insert('users', {
       'full_name': 'Bác sĩ Lê Mạnh Hùng',
       'email': 'hung.le@clinic.com',
       'password_hash': '123456',
-      'role': 'Doctor'
+      'role': 'Doctor',
     }); // id: 3
 
     await db.insert('users', {
       'full_name': 'Bác sĩ Phạm Minh Anh',
       'email': 'anh.pham@clinic.com',
       'password_hash': '123456',
-      'role': 'Doctor'
+      'role': 'Doctor',
     }); // id: 4
 
     // 2. Chèn Hồ sơ bệnh nhân
@@ -173,7 +179,7 @@ class AppDatabase {
       'gender': 'Nam',
       'relationship': 'Bản thân',
       'dob': '2002-10-20',
-      'phone_number': '0912345678'
+      'phone_number': '0912345678',
     });
     await db.insert('patient_profiles', {
       'user_id': 2,
@@ -181,37 +187,70 @@ class AppDatabase {
       'gender': 'Nữ',
       'relationship': 'Em gái',
       'dob': '2010-05-12',
-      'phone_number': '0988888888'
+      'phone_number': '0988888888',
     });
 
     // 3. Chèn Chuyên khoa
-    await db.insert('specialties', {'name': 'Nội Tổng Quát', 'description': 'Khám sàng lọc, tư vấn sức khỏe tổng thể'});
-    await db.insert('specialties', {'name': 'Tim Mạch', 'description': 'Chuyên khoa về tim và huyết áp'});
-    await db.insert('specialties', {'name': 'Nhi Khoa', 'description': 'Chăm sóc sức khỏe toàn diện cho trẻ em'});
+    await db.insert('specialties', {
+      'name': 'Nội Tổng Quát',
+      'description': 'Khám sàng lọc, tư vấn sức khỏe tổng thể',
+    });
+    await db.insert('specialties', {
+      'name': 'Tim Mạch',
+      'description': 'Chuyên khoa về tim và huyết áp',
+    });
+    await db.insert('specialties', {
+      'name': 'Nhi Khoa',
+      'description': 'Chăm sóc sức khỏe toàn diện cho trẻ em',
+    });
 
     // 4. Chèn Phòng khám
-    await db.insert('clinics', {'name': 'Phòng khám Đa khoa Quốc tế', 'address': '456 Võ Văn Kiệt, Quận 1', 'operating_hours': '08:00 - 20:00'});
-    await db.insert('clinics', {'name': 'Bệnh viện Vinmec', 'address': '208 Nguyễn Hữu Cảnh, Bình Thạnh', 'operating_hours': '24/7'});
+    await db.insert('clinics', {
+      'name': 'Phòng khám Đa khoa Quốc tế',
+      'address': '456 Võ Văn Kiệt, Quận 1',
+      'operating_hours': '08:00 - 20:00',
+    });
+    await db.insert('clinics', {
+      'name': 'Bệnh viện Vinmec',
+      'address': '208 Nguyễn Hữu Cảnh, Bình Thạnh',
+      'operating_hours': '24/7',
+    });
 
     // 5. Chèn Bác sĩ
     await db.insert('doctors', {
-      'user_id': 3, 'specialty_id': 1, 'clinic_id': 1,
-      'bio': '15 năm kinh nghiệm tại BV Bạch Mai', 'experience_years': 15, 'rating': 4.9, 'price': 300000
+      'user_id': 3,
+      'specialty_id': 1,
+      'clinic_id': 1,
+      'bio': '15 năm kinh nghiệm tại BV Bạch Mai',
+      'experience_years': 15,
+      'rating': 4.9,
+      'price': 300000,
     });
     await db.insert('doctors', {
-      'user_id': 4, 'specialty_id': 3, 'clinic_id': 2,
-      'bio': 'Chuyên gia tâm lý và sức khỏe nhi nhi', 'experience_years': 8, 'rating': 4.7, 'price': 500000
+      'user_id': 4,
+      'specialty_id': 3,
+      'clinic_id': 2,
+      'bio': 'Chuyên gia tâm lý và sức khỏe nhi nhi',
+      'experience_years': 8,
+      'rating': 4.7,
+      'price': 500000,
     });
 
     // 6. Lịch khám
     int schId = await db.insert('schedules', {
-      'doctor_id': 1, 'available_date': '2026-03-20', 'start_time': '08:00', 'end_time': '12:00'
+      'doctor_id': 1,
+      'available_date': '2026-03-20',
+      'start_time': '08:00',
+      'end_time': '12:00',
     });
 
     List<String> hours = ['08:00', '08:30', '09:00', '09:30', '10:00', '10:30'];
     for (String h in hours) {
       await db.insert('time_slots', {
-        'schedule_id': schId, 'start_time': h, 'end_time': '', 'is_booked': 0
+        'schedule_id': schId,
+        'start_time': h,
+        'end_time': '',
+        'is_booked': 0,
       });
     }
 
