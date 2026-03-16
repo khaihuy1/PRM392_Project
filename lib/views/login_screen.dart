@@ -79,7 +79,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   decoration: const BoxDecoration(
                     image: DecorationImage(
                       image: NetworkImage(
-                          'https://vcdn1-suckhoe.vnecdn.net/2022/11/17/vinmec-1-1668661706-5386-1668661750.jpg'),
+                          'https://gacbepbamien.com/wp-content/uploads/2021/08/hinh-anh-bac-si-kham-benh-1.jpg'),
                       fit: BoxFit.cover,
                     ),
                   ),
@@ -223,7 +223,7 @@ class _LoginScreenState extends State<LoginScreen> {
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFDEE2E6))),
       enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFDEE2E6))),
-      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const Color(0xFF0066B3) == Colors.blue ? const BorderSide(color: Color(0xFF0066B3), width: 1.5) : const BorderSide(color: Color(0xFF0066B3), width: 1.5)),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFF0066B3), width: 1.5)),
     );
   }
 }
