@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../implementations/local/app_database.dart';
 import 'main_screen.dart';
 import 'register_screen.dart';
@@ -39,12 +40,20 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (users.isNotEmpty) {
         final user = users.first;
+        final int userId = user['user_id']; // Lấy ID ra
+
+        // --- BỔ SUNG: Lưu ID vào bộ nhớ máy ---
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setInt('user_id', userId);
+        print("DEBUG: Đã lưu ID $userId vào SharedPreferences sau khi login");
+        // ---------------------------------------
+
         if (!mounted) return;
-        
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => MainScreen(userId: user['user_id']),
+            builder: (context) => MainScreen(userId: userId),
           ),
         );
       } else {

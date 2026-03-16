@@ -4,7 +4,6 @@ import 'package:projectnhom/implementations/models/patient_profile.dart';
 import 'package:projectnhom/implementations/repository/appointment_repository.dart';
 import 'package:projectnhom/implementations/repository/patient_repository.dart';
 import 'package:projectnhom/views/booking_schedule/add_patient_screen.dart';
-import 'package:projectnhom/views/landing_page.dart';
 import 'package:projectnhom/views/main_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -28,9 +27,10 @@ class _SelectPatientScreenState extends State<SelectPatientScreen> {
   // 1. Hàm helper lấy UserId
   Future<int?> getSavedUserId() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getInt('user_id');
+    final id = prefs.getInt('user_id');
+    print("DEBUG: Current User ID from Prefs: $id"); // Thêm dòng này
+    return id;
   }
-
   // 2. Hàm gom nhóm logic lấy dữ liệu cho FutureBuilder
   Future<Map<String, dynamic>> _loadInitialData() async {
     int? userId = await getSavedUserId();

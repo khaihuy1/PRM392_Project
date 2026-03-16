@@ -2,15 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:projectnhom/views/appointment/appointment_list_screen.dart';
 import 'package:projectnhom/views/landing_page.dart';
 import 'package:projectnhom/views/profile_screen.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:projectnhom/views/patient/medical_history_screen.dart';
+import 'package:projectnhom/views/patient/patient_list_screen.dart';
+import 'package:projectnhom/implementations/local/app_database.dart';
 import 'booking_schedule/select_specialty_screen.dart';
-import 'profile_screen.dart';
-import 'patient/medical_history_screen.dart';
-import 'patient/patient_list_screen.dart';
-import '../implementations/local/app_database.dart';
 
 class MainScreen extends StatefulWidget {
-  final int userId; // Nhận userId được truyền từ trang Login
+  final int userId;
   final int initialIndex;
 
   const MainScreen({super.key, required this.userId, this.initialIndex = 0});
@@ -23,9 +21,6 @@ class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
   String? _userRole;
   bool _isLoading = true;
-  late int _currentIndex;
-
-  late List<Widget> _pages;
 
   @override
   void initState() {
@@ -35,70 +30,71 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Future<void> _loadUserRole() async {
-    final db = await AppDatabase.instance.db;
-    final List<Map<String, dynamic>> users = await db.query(
-      'users',
-      where: 'user_id = ?',
-      whereArgs: [widget.userId],
-    );
+    try {
+      final db = await AppDatabase.instance.db;
+      final List<Map<String, dynamic>> users = await db.query(
+        'users',
+        where: 'user_id = ?',
+        whereArgs: [widget.userId],
+      );
 
-    if (users.isNotEmpty) {
-      setState(() {
-        _userRole = users.first['role'];
-        _isLoading = false;
-      });
+      if (users.isNotEmpty) {
+        setState(() {
+          _userRole = users.first['role'];
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      debugPrint("Lỗi load role: $e");
     }
   }
 
+  // Hàm tạo danh sách Menu dựa trên quyền của User
   List<Map<String, dynamic>> _getNavItems() {
     final bool isAdmin = _userRole == 'Admin';
-    
-    List<Map<String, dynamic>> items = [
-      {
-        'icon': Icons.home_outlined,
-        'activeIcon': Icons.home,
-        'label': 'Trang Chủ',
-        'page': const LandingPage(),
-      },
-    // Khởi tạo danh sách các trang bằng userId động từ widget
-    _pages = [
-      const LandingPage(),
-      const SelectSpecialtyScreen(),
-      // Nhớ truyền userId vào đây nếu trang này cần
-      AppointmentListScreen(userId: widget.userId),
-      // Đã thay số 2 bằng userId thật
-      ProfileScreen(userId: widget.userId),
-    ];
+    List<Map<String, dynamic>> items = [];
 
-    // Admin không có nút Đặt lịch
+    // 1. Trang Chủ (Ai cũng có)
+    items.add({
+      'icon': Icons.home_outlined,
+      'activeIcon': Icons.home,
+      'label': 'Trang Chủ',
+      'page': const LandingPage(),
+    });
+
+    // 2. Đặt Lịch (Chỉ dành cho Patient - Không phải Admin)
     if (!isAdmin) {
       items.add({
         'icon': Icons.calendar_today_outlined,
         'activeIcon': Icons.calendar_today,
         'label': 'Đặt Lịch',
-        'page': SelectSpecialtyScreen(),
+        'page': const SelectSpecialtyScreen(),
       });
     }
 
-    items.addAll([
-      {
-        'icon': Icons.assignment_outlined,
-        'activeIcon': Icons.assignment,
-        'label': 'Lịch hẹn',
-        'page': AppointmentListScreen(
-          userId: widget.userId, 
-          userRole: _userRole ?? 'Patient'
-        ),
-      },
-      {
+    // 3. Lịch hẹn (Cả 2 đều có nhưng logic bên trong trang sẽ khác)
+    items.add({
+      'icon': Icons.assignment_outlined,
+      'activeIcon': Icons.assignment,
+      'label': 'Lịch hẹn',
+      'page': AppointmentListScreen(
+        userId: widget.userId,
+        userRole: _userRole ?? 'Patient',
+      ),
+    });
+
+    // 4. Lịch sử khám (Dành cho Patient)
+    if (!isAdmin) {
+      items.add({
         'icon': Icons.history_outlined,
         'activeIcon': Icons.history,
         'label': 'Lịch sử',
         'page': MedicalHistoryScreen(userId: widget.userId),
-      },
-    ]);
+      });
+    }
 
-    // Chỉ ADMIN thấy mục hồ sơ
+    // 5. Quản lý Hồ sơ (Chỉ ADMIN thấy)
     if (isAdmin) {
       items.add({
         'icon': Icons.people_outline,
@@ -108,6 +104,7 @@ class _MainScreenState extends State<MainScreen> {
       });
     }
 
+    // 6. Tài khoản (Ai cũng có)
     items.add({
       'icon': Icons.person_outline,
       'activeIcon': Icons.person,
@@ -121,10 +118,16 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFF0066B3)),
+        ),
+      );
     }
 
     final navItems = _getNavItems();
+
+    // Kiểm tra tránh lỗi index out of bounds
     if (_currentIndex >= navItems.length) {
       _currentIndex = 0;
     }
@@ -132,9 +135,10 @@ class _MainScreenState extends State<MainScreen> {
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
-        children: navItems.map<Widget>((item) => item['page'] as Widget).toList(),
+        children: navItems
+            .map<Widget>((item) => item['page'] as Widget)
+            .toList(),
       ),
-      body: IndexedStack(index: _currentIndex, children: _pages),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: _currentIndex,
