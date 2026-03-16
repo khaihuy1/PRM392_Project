@@ -79,7 +79,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   decoration: const BoxDecoration(
                     image: DecorationImage(
                       image: NetworkImage(
-                          'https://gacbepbamien.com/wp-content/uploads/2021/08/hinh-anh-bac-si-kham-benh-1.jpg'),
+                          'https://i.postimg.cc/2SkzGZhs/cac-nha-si-chau-a-vui-ve-tao-dang-trong-phong-dieu-tri-tai-phong-kham-truoc-cac-thiet-bi-1098-20373.avif'
+                      ),
                       fit: BoxFit.cover,
                     ),
                   ),
@@ -116,33 +117,18 @@ class _LoginScreenState extends State<LoginScreen> {
               ],
             ),
 
-            // Nav bar
-            Container(
-              color: const Color(0xFF0066B3),
-              padding: const EdgeInsets.symmetric(vertical: 15),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _NavIcon(icon: Icons.phone_in_talk, label: 'Gọi tổng đài'),
-                  _NavIcon(icon: Icons.calendar_month, label: 'Đặt lịch hẹn'),
-                  _NavIcon(icon: Icons.person_search, label: 'Tìm bác sĩ'),
-                ],
-              ),
-            ),
+            // Đã xóa thanh Navigation bar (Gọi tổng đài, Đặt lịch hẹn, Tìm bác sĩ)
 
             Padding(
               padding: const EdgeInsets.all(24.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Chào mừng bạn quay lại',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF444444))),
-                  const SizedBox(height: 24),
 
                   _buildLabel('Email *'),
                   TextField(
                     controller: _emailController,
-                    decoration: _inputDecoration('Nhập email (vd: khaihuy@student.com)'),
+                    decoration: _inputDecoration('Nhập Email '),
                   ),
                   const SizedBox(height: 16),
 
@@ -150,7 +136,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   TextField(
                     controller: _passwordController,
                     obscureText: true,
-                    decoration: _inputDecoration('Nhập mật khẩu (vd: 123456)'),
+                    decoration: _inputDecoration('Nhập mật khẩu '),
                   ),
 
                   Align(
