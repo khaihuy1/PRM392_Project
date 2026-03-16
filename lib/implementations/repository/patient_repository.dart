@@ -22,4 +22,25 @@ class PatientRepository {
     final db = await _appDb.db;
     return await db.insert('patient_profiles', profile.toMap());
   }
+
+  // 3. Cập nhật hồ sơ
+  Future<int> updateProfile(PatientProfile profile) async {
+    final db = await _appDb.db;
+    return await db.update(
+      'patient_profiles',
+      profile.toMap(),
+      where: 'profile_id = ?',
+      whereArgs: [profile.id],
+    );
+  }
+
+  // 4. Xóa hồ sơ
+  Future<int> deleteProfile(int profileId) async {
+    final db = await _appDb.db;
+    return await db.delete(
+      'patient_profiles',
+      where: 'profile_id = ?',
+      whereArgs: [profileId],
+    );
+  }
 }

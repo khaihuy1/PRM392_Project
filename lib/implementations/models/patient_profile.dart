@@ -1,11 +1,12 @@
 class PatientProfile {
   final int? id;
-  final int userId; // ID của tài khoản đang đăng nhập
+  final int userId; 
   final String fullName;
-  final String relationship; // Ví dụ: 'Bản thân', 'Con', 'Bố', 'Mẹ'
-  final String dob; // Ngày sinh (Date of Birth)
+  final String relationship; 
+  final String dob; 
   final String? phoneNumber;
   final String? gender;
+  final String? diagnosis;
 
   PatientProfile({
     this.id,
@@ -15,6 +16,7 @@ class PatientProfile {
     required this.dob,
     this.phoneNumber,
     this.gender,
+    this.diagnosis,
   });
 
   factory PatientProfile.fromMap(Map<String, dynamic> map) => PatientProfile(
@@ -25,6 +27,7 @@ class PatientProfile {
     dob: map['dob'] ?? '',
     phoneNumber: map['phone_number'],
     gender: map['gender'],
+    diagnosis: map['diagnosis'],
   );
 
   Map<String, dynamic> toMap() => {
@@ -32,8 +35,10 @@ class PatientProfile {
     'user_id': userId,
     'full_name': fullName,
     'relationship': relationship,
+    'relationship': relationship,
     'dob': dob,
     'phone_number': phoneNumber,
     'gender': gender,
+    'diagnosis': diagnosis,
   };
 }
