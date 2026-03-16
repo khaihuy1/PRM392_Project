@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:projectnhom/views/appointment/appointment_list_screen.dart';
-import 'landing_page.dart';
+import 'package:projectnhom/views/landing_page.dart';
+import 'package:projectnhom/views/profile_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'booking_schedule/select_specialty_screen.dart';
 import 'profile_screen.dart';
 import 'patient/medical_history_screen.dart';
@@ -8,14 +10,10 @@ import 'patient/patient_list_screen.dart';
 import '../implementations/local/app_database.dart';
 
 class MainScreen extends StatefulWidget {
-  final int userId;
+  final int userId; // Nhận userId được truyền từ trang Login
   final int initialIndex;
 
-  const MainScreen({
-    super.key,
-    required this.userId,
-    this.initialIndex = 0,
-  });
+  const MainScreen({super.key, required this.userId, this.initialIndex = 0});
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -25,6 +23,9 @@ class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
   String? _userRole;
   bool _isLoading = true;
+  late int _currentIndex;
+
+  late List<Widget> _pages;
 
   @override
   void initState() {
@@ -59,6 +60,14 @@ class _MainScreenState extends State<MainScreen> {
         'label': 'Trang Chủ',
         'page': const LandingPage(),
       },
+    // Khởi tạo danh sách các trang bằng userId động từ widget
+    _pages = [
+      const LandingPage(),
+      const SelectSpecialtyScreen(),
+      // Nhớ truyền userId vào đây nếu trang này cần
+      AppointmentListScreen(userId: widget.userId),
+      // Đã thay số 2 bằng userId thật
+      ProfileScreen(userId: widget.userId),
     ];
 
     // Admin không có nút Đặt lịch
@@ -125,6 +134,7 @@ class _MainScreenState extends State<MainScreen> {
         index: _currentIndex,
         children: navItems.map<Widget>((item) => item['page'] as Widget).toList(),
       ),
+      body: IndexedStack(index: _currentIndex, children: _pages),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: _currentIndex,
