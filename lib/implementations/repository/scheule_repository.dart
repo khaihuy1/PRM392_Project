@@ -1,4 +1,3 @@
-
 import 'package:projectnhom/implementations/local/app_database.dart';
 import 'package:projectnhom/implementations/models/schedule.dart';
 import 'package:projectnhom/implementations/models/time_slots.dart';
@@ -9,10 +8,11 @@ class ScheduleRepository {
   // 1. Lấy danh sách các ngày bác sĩ có lịch khám
   Future<List<Schedule>> getSchedulesByDoctor(int doctorId) async {
     final db = await _appDb.db;
-    // Dùng query vì chỉ thao tác trên 1 bảng schedules
+
+    // Lọc những ngày khám bắt đầu từ ngày mốt (hôm nay + 1 ngày)
     final List<Map<String, dynamic>> maps = await db.query(
       'schedules',
-      where: 'doctor_id = ?',
+      where: 'doctor_id = ? AND available_date > date("now", "+1 day")',
       whereArgs: [doctorId],
       orderBy: 'available_date ASC',
     );
