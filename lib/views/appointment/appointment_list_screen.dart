@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:projectnhom/implementations/repository/appointment_repository.dart';
-import '../patient/notification_list_screen.dart'; // Import màn hình thông báo
 import 'appointment_detail_screen.dart';
 
 class AppointmentListScreen extends StatefulWidget {
   final int userId;
-  final String userRole; // Thêm role để truyền vào tab thông báo
+  final String userRole;
 
   const AppointmentListScreen({
     super.key, 
@@ -26,38 +25,18 @@ class _AppointmentListScreenState extends State<AppointmentListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        backgroundColor: Colors.grey[100],
-        appBar: AppBar(
-          title: const Text(
-            'Lịch hẹn & Thông báo',
-            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-          ),
-          backgroundColor: Colors.white,
-          elevation: 0,
-          centerTitle: true,
-          bottom: const TabBar(
-            labelColor: Color(0xFF0066B3),
-            unselectedLabelColor: Colors.grey,
-            indicatorColor: Color(0xFF0066B3),
-            tabs: [
-              Tab(text: 'Lịch hẹn', icon: Icon(Icons.assignment_outlined)),
-              Tab(text: 'Thông báo', icon: Icon(Icons.notifications_none)),
-            ],
-          ),
+    return Scaffold(
+      backgroundColor: Colors.grey[100],
+      appBar: AppBar(
+        title: const Text(
+          'Lịch hẹn của tôi',
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
-        body: TabBarView(
-          children: [
-            // Tab 1: Danh sách lịch hẹn
-            _buildAppointmentList(),
-            
-            // Tab 2: Danh sách thông báo (Gộp từ NotificationListScreen)
-            NotificationListScreen(userRole: widget.userRole, isNested: true),
-          ],
-        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
       ),
+      body: _buildAppointmentList(),
     );
   }
 
