@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:projectnhom/views/appointment/appointment_list_screen.dart';
-import 'landing_page.dart'; // Trang chủ của bạn
-import 'booking_schedule/select_specialty_screen.dart'; // Trang chọn chuyên khoa
+import 'landing_page.dart';
+import 'booking_schedule/select_specialty_screen.dart';
+import 'profile_screen.dart';
 
 class MainScreen extends StatefulWidget {
   final int userId;
-  final int initialIndex; // Thêm biến để nhận vị trí tab muốn mở
+  final int initialIndex;
 
   const MainScreen({
     super.key,
     required this.userId,
-    this.initialIndex = 0, // Mặc định mở Trang chủ (index 0)
+    this.initialIndex = 0,
   });
 
   @override
@@ -24,22 +25,19 @@ class _MainScreenState extends State<MainScreen> {
   @override
   void initState() {
     super.initState();
-    // Khởi tạo index từ giá trị truyền vào
     _currentIndex = widget.initialIndex;
 
-    // Danh sách các trang ứng với từng Tab
     _pages = [
       const LandingPage(),
       SelectSpecialtyScreen(),
-      const AppointmentListScreen(userId: 2),
-      const Center(child: Text('Cài đặt hệ thống')), // Placeholder Cài đặt
+      const AppointmentListScreen(userId: 2), // Tạm thời để cứng ID 2 theo code cũ của bạn
+      ProfileScreen(userId: widget.userId),
     ];
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // IndexedStack giữ cho các trang không bị load lại khi chuyển tab
       body: IndexedStack(
         index: _currentIndex,
         children: _pages,
@@ -47,7 +45,7 @@ class _MainScreenState extends State<MainScreen> {
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: _currentIndex,
-        selectedItemColor: const Color(0xFF2962FF), // Màu xanh đồng bộ với Hero Button
+        selectedItemColor: const Color(0xFF0066B3),
         unselectedItemColor: Colors.grey,
         showUnselectedLabels: true,
         onTap: (index) {
@@ -67,14 +65,14 @@ class _MainScreenState extends State<MainScreen> {
             label: 'Đặt Lịch',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
+            icon: Icon(Icons.assignment_outlined),
+            activeIcon: Icon(Icons.assignment),
             label: 'Lịch hẹn',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.settings_outlined),
-            activeIcon: Icon(Icons.settings),
-            label: 'Cài Đặt',
+            icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person),
+            label: 'Tài khoản',
           ),
         ],
       ),

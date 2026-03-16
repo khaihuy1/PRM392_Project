@@ -14,9 +14,8 @@ class AppDatabase {
 
   Future<Database> _open() async {
     final dbPath = await getDatabasesPath();
-    // Lưu ý: Nếu muốn reset data, hãy đổi tên file này (vd: medical_v2.db)
-    // hoặc gỡ app cài lại.
-    final path = join(dbPath, 'medical_booking_final.db');
+    // Lưu ý: Đã đổi tên file để cơ sở dữ liệu được khởi tạo lại với mật khẩu mới
+    final path = join(dbPath, 'medical_booking_v3.db');
 
     return openDatabase(
       path,
@@ -130,23 +129,44 @@ class AppDatabase {
           );
         ''');
 
-        // Gọi hàm nạp dữ liệu mẫu sau khi tạo bảng xong
         await _seedData(db);
       },
     );
   }
 
-  // ===================== HÀM NẠP DỮ LIỆU MẪU (SEED DATA) =====================
   Future<void> _seedData(Database db) async {
-    print("--- ĐANG NẠP DỮ LIỆU MẪU ---");
+    print("--- ĐANG NẠP DỮ LIỆU MẪU CÓ MẬT KHẨU ---");
 
-    // 1. Chèn Users
-    await db.insert('users', {'full_name': 'Admin System', 'email': 'admin@clinic.com', 'role': 'Admin'});
-    await db.insert('users', {'full_name': 'Khai Huy', 'email': 'khaihuy@student.com', 'role': 'Patient'}); // id: 2
-    await db.insert('users', {'full_name': 'Bác sĩ Lê Mạnh Hùng', 'role': 'Doctor'}); // id: 3
-    await db.insert('users', {'full_name': 'Bác sĩ Phạm Minh Anh', 'role': 'Doctor'}); // id: 4
+    // 1. Chèn Users với mật khẩu mặc định là '123456'
+    await db.insert('users', {
+      'full_name': 'Admin System',
+      'email': 'admin@clinic.com',
+      'password_hash': '123456',
+      'role': 'Admin'
+    });
+    
+    await db.insert('users', {
+      'full_name': 'Khai Huy',
+      'email': 'khaihuy@student.com',
+      'password_hash': '123456',
+      'role': 'Patient'
+    }); // id: 2
 
-    // 2. Chèn Hồ sơ bệnh nhân (Cho bước 5)
+    await db.insert('users', {
+      'full_name': 'Bác sĩ Lê Mạnh Hùng',
+      'email': 'hung.le@clinic.com',
+      'password_hash': '123456',
+      'role': 'Doctor'
+    }); // id: 3
+
+    await db.insert('users', {
+      'full_name': 'Bác sĩ Phạm Minh Anh',
+      'email': 'anh.pham@clinic.com',
+      'password_hash': '123456',
+      'role': 'Doctor'
+    }); // id: 4
+
+    // 2. Chèn Hồ sơ bệnh nhân
     await db.insert('patient_profiles', {
       'user_id': 2,
       'full_name': 'Khai Huy (Bản thân)',
@@ -164,34 +184,30 @@ class AppDatabase {
       'phone_number': '0988888888'
     });
 
-    // 3. Chèn Chuyên khoa (Cho bước 1)
+    // 3. Chèn Chuyên khoa
     await db.insert('specialties', {'name': 'Nội Tổng Quát', 'description': 'Khám sàng lọc, tư vấn sức khỏe tổng thể'});
     await db.insert('specialties', {'name': 'Tim Mạch', 'description': 'Chuyên khoa về tim và huyết áp'});
     await db.insert('specialties', {'name': 'Nhi Khoa', 'description': 'Chăm sóc sức khỏe toàn diện cho trẻ em'});
 
-    // 4. Chèn Phòng khám (Cho bước 2)
+    // 4. Chèn Phòng khám
     await db.insert('clinics', {'name': 'Phòng khám Đa khoa Quốc tế', 'address': '456 Võ Văn Kiệt, Quận 1', 'operating_hours': '08:00 - 20:00'});
     await db.insert('clinics', {'name': 'Bệnh viện Vinmec', 'address': '208 Nguyễn Hữu Cảnh, Bình Thạnh', 'operating_hours': '24/7'});
 
-    // 5. Chèn Bác sĩ (Cho bước 3)
-    // BS Hùng - Nội khoa (id:1) - PK Quốc tế (id:1)
+    // 5. Chèn Bác sĩ
     await db.insert('doctors', {
       'user_id': 3, 'specialty_id': 1, 'clinic_id': 1,
       'bio': '15 năm kinh nghiệm tại BV Bạch Mai', 'experience_years': 15, 'rating': 4.9, 'price': 300000
     });
-    // BS Minh Anh - Nhi khoa (id:3) - BV Vinmec (id:2)
     await db.insert('doctors', {
       'user_id': 4, 'specialty_id': 3, 'clinic_id': 2,
       'bio': 'Chuyên gia tâm lý và sức khỏe nhi nhi', 'experience_years': 8, 'rating': 4.7, 'price': 500000
     });
 
-    // 6. Chèn Lịch khám & Khung giờ (Cho bước 4)
-    // Tạo lịch cho BS Hùng ngày 20/03/2026
+    // 6. Lịch khám
     int schId = await db.insert('schedules', {
       'doctor_id': 1, 'available_date': '2026-03-20', 'start_time': '08:00', 'end_time': '12:00'
     });
 
-    // Tạo các slot giờ (mỗi slot 30 phút)
     List<String> hours = ['08:00', '08:30', '09:00', '09:30', '10:00', '10:30'];
     for (String h in hours) {
       await db.insert('time_slots', {
@@ -199,6 +215,6 @@ class AppDatabase {
       });
     }
 
-    print("--- TẤT CẢ DỮ LIỆU ĐÃ SẴN SÀNG ĐỂ TEST ---");
+    print("--- DỮ LIỆU MẪU ĐÃ ĐƯỢC CẬP NHẬT MẬT KHẨU ---");
   }
 }

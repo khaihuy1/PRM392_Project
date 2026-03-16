@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:projectnhom/views/register_form.dart';
+import 'register_form.dart';
 
 class RegisterScreen extends StatelessWidget {
   const RegisterScreen({super.key});
@@ -7,7 +7,7 @@ class RegisterScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7FA), // Màu nền nhẹ như ảnh
+      backgroundColor: const Color(0xFFF4F7FA),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
@@ -18,7 +18,10 @@ class RegisterScreen extends StatelessWidget {
               const SizedBox(height: 8),
               const Text(
                 'ClinicCare',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1A237E)),
+                style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1A237E)),
               ),
               const SizedBox(height: 16),
               const Text(
@@ -47,9 +50,35 @@ class RegisterScreen extends StatelessWidget {
               ),
 
               const SizedBox(height: 24),
+              
+              // Nút quay lại màn hình Login
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text('Đã có tài khoản? '),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pop(context); // Quay lại màn hình trước đó (Login)
+                    },
+                    child: const Text(
+                      'Đăng nhập ngay',
+                      style: TextStyle(
+                        color: Colors.blueAccent,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 16),
+              
               TextButton(
-                onPressed: () {},
-                child: const Text('Quay về trang chủ', style: TextStyle(color: Colors.black54)),
+                onPressed: () {
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+                },
+                child: const Text('Quay về trang chủ',
+                    style: TextStyle(color: Colors.black54)),
               ),
             ],
           ),
