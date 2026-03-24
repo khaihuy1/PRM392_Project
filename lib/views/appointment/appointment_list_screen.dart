@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart'; // Sử dụng thư viện chuẩn
 import 'package:projectnhom/implementations/repository/appointment_repository.dart';
 import 'appointment_detail_screen.dart';
 
@@ -25,24 +26,28 @@ class _AppointmentListScreenState extends State<AppointmentListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    bool isDoctor = widget.userRole == 'Doctor';
+    
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: const Text(
-          'Lịch hẹn của tôi',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+        title: Text(
+          isDoctor ? 'Danh sách bệnh nhân khám' : 'Lịch hẹn của tôi',
+          style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
       ),
-      body: _buildAppointmentList(),
+      body: _buildAppointmentList(isDoctor),
     );
   }
 
-  Widget _buildAppointmentList() {
+  Widget _buildAppointmentList(bool isDoctor) {
     return FutureBuilder<List<Map<String, dynamic>>>(
-      future: _appointmentRepo.getAllAppointments(widget.userId),
+      future: isDoctor 
+          ? _appointmentRepo.getDoctorAppointments(widget.userId)
+          : _appointmentRepo.getAllAppointments(widget.userId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -55,7 +60,7 @@ class _AppointmentListScreenState extends State<AppointmentListScreen> {
         final appointments = snapshot.data ?? [];
 
         if (appointments.isEmpty) {
-          return _buildEmptyState();
+          return _buildEmptyState(isDoctor);
         }
 
         return RefreshIndicator(
@@ -65,20 +70,7 @@ class _AppointmentListScreenState extends State<AppointmentListScreen> {
             itemCount: appointments.length,
             itemBuilder: (context, index) {
               final item = appointments[index];
-              return InkWell(
-                onTap: () async {
-                  final result = await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => AppointmentDetailScreen(appointment: item),
-                    ),
-                  );
-                  if (result == true) {
-                    _refreshList();
-                  }
-                },
-                child: _buildAppointmentCard(item),
-              );
+              return _buildAppointmentCard(item, isDoctor);
             },
           ),
         );
@@ -86,24 +78,35 @@ class _AppointmentListScreenState extends State<AppointmentListScreen> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(bool isDoctor) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.event_busy, size: 80, color: Colors.grey[300]),
           const SizedBox(height: 16),
-          const Text(
-            'Chưa có lịch hẹn nào\nBạn hãy thử đặt lịch nhé!',
+          Text(
+            isDoctor ? 'Hôm nay chưa có bệnh nhân nào đặt lịch' : 'Chưa có lịch hẹn nào\nBạn hãy thử đặt lịch nhé!',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey, fontSize: 16),
+            style: const TextStyle(color: Colors.grey, fontSize: 16),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildAppointmentCard(Map<String, dynamic> item) {
+  Widget _buildAppointmentCard(Map<String, dynamic> item, bool isDoctor) {
+    String status = item['status'] ?? 'Pending';
+    String displayDate = item['available_date'] ?? '';
+    
+    // Format lại ngày nếu cần
+    try {
+      DateTime date = DateTime.parse(displayDate);
+      displayDate = DateFormat('dd/MM/yyyy').format(date);
+    } catch (e) {
+      // Giữ nguyên nếu không parse được
+    }
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
@@ -131,29 +134,25 @@ class _AppointmentListScreenState extends State<AppointmentListScreen> {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  item['available_date'] ?? '',
-                  style: const TextStyle(
-                    color: Colors.blue,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  displayDate,
+                  style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
                 ),
               ),
-              _buildStatusTag(item['status'] ?? 'Chờ khám'),
+              _buildStatusTag(status),
             ],
           ),
           const SizedBox(height: 16),
           Text(
-            "Bác sĩ: ${item['doctor_name']}",
+            isDoctor ? "Bệnh nhân: ${item['patient_name']}" : "Bác sĩ: ${item['doctor_name']}",
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              const Icon(Icons.person_outline, size: 18, color: Colors.grey),
-              const SizedBox(width: 8),
-              Text("Bệnh nhân: ${item['patient_name']}"),
-            ],
-          ),
+          if (isDoctor) ...[
+             const SizedBox(height: 4),
+             Text(
+               "Giới tính: ${item['patient_gender']} - Sinh năm: ${item['patient_dob'].toString().split('-')[0]}",
+               style: const TextStyle(color: Colors.grey, fontSize: 13),
+             ),
+          ],
           const SizedBox(height: 8),
           Row(
             children: [
@@ -162,35 +161,85 @@ class _AppointmentListScreenState extends State<AppointmentListScreen> {
               Text("Giờ khám: ${item['start_time']} - ${item['end_time']}"),
             ],
           ),
-          const SizedBox(height: 12),
-          const Align(
-            alignment: Alignment.centerRight,
-            child: Text(
-              'Xem chi tiết >',
-              style: TextStyle(color: Colors.blue, fontWeight: FontWeight.w500),
-            ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Icon(Icons.notes, size: 18, color: Colors.grey),
+              const SizedBox(width: 8),
+              Expanded(child: Text("Lý do: ${item['reason'] ?? 'Không có'}", maxLines: 1, overflow: TextOverflow.ellipsis)),
+            ],
+          ),
+          const Divider(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              if (isDoctor && (status == 'Pending' || status == 'Chờ khám'))
+                Row(
+                  children: [
+                    ElevatedButton(
+                      onPressed: () => _updateAppointmentStatus(item['appointment_id'], 'Confirmed'),
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+                      child: const Text('Xác nhận'),
+                    ),
+                    const SizedBox(width: 8),
+                    OutlinedButton(
+                      onPressed: () => _updateAppointmentStatus(item['appointment_id'], 'Cancelled'),
+                      style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
+                      child: const Text('Từ chối'),
+                    ),
+                  ],
+                )
+              else if (isDoctor && status == 'Confirmed')
+                ElevatedButton.icon(
+                  onPressed: () => _updateAppointmentStatus(item['appointment_id'], 'Completed'),
+                  icon: const Icon(Icons.check_circle_outline),
+                  label: const Text('Hoàn thành khám'),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white),
+                )
+              else
+                const SizedBox(),
+                
+              TextButton(
+                onPressed: () async {
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => AppointmentDetailScreen(appointment: item),
+                    ),
+                  );
+                  if (result == true) _refreshList();
+                },
+                child: const Text('Chi tiết >'),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
+  Future<void> _updateAppointmentStatus(int appointmentId, String status) async {
+    bool success = await _appointmentRepo.updateStatus(appointmentId, status);
+    if (success) {
+      _refreshList();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Đã cập nhật trạng thái: $status'))
+      );
+    }
+  }
+
   Widget _buildStatusTag(String status) {
     Color color = Colors.orange;
-    if (status == 'Chờ khám' || status == 'Pending') color = Colors.blue;
-    if (status == 'Confirmed' || status == 'Đã khám') color = Colors.green;
-    if (status == 'Cancelled' || status == 'Đã hủy') color = Colors.red;
+    String text = status;
+    if (status == 'Pending' || status == 'Chờ khám') { color = Colors.blue; text = 'Chờ xác nhận'; }
+    if (status == 'Confirmed') { color = Colors.green; text = 'Đã xác nhận'; }
+    if (status == 'Completed' || status == 'Đã khám') { color = Colors.teal; text = 'Đã khám xong'; }
+    if (status == 'Cancelled' || status == 'Đã hủy') { color = Colors.red; text = 'Đã hủy'; }
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        status,
-        style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold),
-      ),
+      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+      child: Text(text, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
     );
   }
 }

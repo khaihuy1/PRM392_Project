@@ -20,4 +20,14 @@ class Schedule {
     startTime: map['start_time'],
     endTime: map['end_time'],
   );
+
+  Map<String, dynamic> toMap() {
+    return {
+      'schedule_id': id,
+      'doctor_id': doctorId,
+      'available_date': availableDate,
+      'start_time': startTime,
+      'end_time': endTime,
+    };
+  }
 }
