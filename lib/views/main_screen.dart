@@ -6,6 +6,7 @@ import 'package:projectnhom/views/patient/medical_history_screen.dart';
 import 'package:projectnhom/views/patient/patient_list_screen.dart';
 import 'package:projectnhom/implementations/local/app_database.dart';
 import 'booking_schedule/select_specialty_screen.dart';
+import 'doctor_schedule/doctor_schedule_list_screen.dart';
 
 class MainScreen extends StatefulWidget {
   final int userId;
@@ -43,6 +44,8 @@ class _MainScreenState extends State<MainScreen> {
           _userRole = users.first['role'];
           _isLoading = false;
         });
+      } else {
+        setState(() => _isLoading = false);
       }
     } catch (e) {
       setState(() => _isLoading = false);
@@ -53,6 +56,8 @@ class _MainScreenState extends State<MainScreen> {
   // Hàm tạo danh sách Menu dựa trên quyền của User
   List<Map<String, dynamic>> _getNavItems() {
     final bool isAdmin = _userRole == 'Admin';
+    final bool isDoctor = _userRole == 'Doctor';
+    
     List<Map<String, dynamic>> items = [];
 
     // 1. Trang Chủ (Ai cũng có)
@@ -63,8 +68,8 @@ class _MainScreenState extends State<MainScreen> {
       'page': const LandingPage(),
     });
 
-    // 2. Đặt Lịch (Chỉ dành cho Patient - Không phải Admin)
-    if (!isAdmin) {
+    // 2. Đặt Lịch (Chỉ dành cho Patient - Không phải Admin và không phải Doctor)
+    if (!isAdmin && !isDoctor) {
       items.add({
         'icon': Icons.calendar_today_outlined,
         'activeIcon': Icons.calendar_today,
@@ -73,7 +78,17 @@ class _MainScreenState extends State<MainScreen> {
       });
     }
 
-    // 3. Lịch hẹn (Cả 2 đều có nhưng logic bên trong trang sẽ khác)
+    // 3. Lịch làm việc (Chỉ dành cho Doctor)
+    if (isDoctor) {
+      items.add({
+        'icon': Icons.schedule_outlined,
+        'activeIcon': Icons.schedule,
+        'label': 'Lịch làm',
+        'page': DoctorScheduleListScreen(userId: widget.userId),
+      });
+    }
+
+    // 4. Lịch hẹn (Ai cũng có nhưng logic bên trong trang sẽ khác)
     items.add({
       'icon': Icons.assignment_outlined,
       'activeIcon': Icons.assignment,
@@ -84,8 +99,8 @@ class _MainScreenState extends State<MainScreen> {
       ),
     });
 
-    // 4. Lịch sử khám (Dành cho Patient)
-    if (!isAdmin) {
+    // 5. Lịch sử khám (Dành cho Patient - Không phải Doctor)
+    if (!isAdmin && !isDoctor) {
       items.add({
         'icon': Icons.history_outlined,
         'activeIcon': Icons.history,
@@ -94,7 +109,7 @@ class _MainScreenState extends State<MainScreen> {
       });
     }
 
-    // 5. Quản lý Hồ sơ (Chỉ ADMIN thấy)
+    // 6. Quản lý Hồ sơ (Chỉ ADMIN thấy)
     if (isAdmin) {
       items.add({
         'icon': Icons.people_outline,
@@ -104,7 +119,7 @@ class _MainScreenState extends State<MainScreen> {
       });
     }
 
-    // 6. Tài khoản (Ai cũng có)
+    // 7. Tài khoản (Ai cũng có)
     items.add({
       'icon': Icons.person_outline,
       'activeIcon': Icons.person,
