@@ -14,8 +14,8 @@ class AppDatabase {
 
   Future<Database> _open() async {
     final dbPath = await getDatabasesPath();
-    // Lưu ý: Đã đổi tên file để cơ sở dữ liệu được khởi tạo lại với mật khẩu mới
-    final path = join(dbPath, 'medical_booking_v3.db');
+    // Đổi tên DB để khởi tạo lại với dữ liệu mới (mỗi chuyên khoa 2-3 bác sĩ)
+    final path = join(dbPath, 'medical_booking_v5.db');
 
     return openDatabase(
       path,
@@ -24,22 +24,21 @@ class AppDatabase {
         print("--- ĐANG KHỞI TẠO CƠ SỞ DỮ LIỆU ---");
 
         // 1. USERS
-        // 1. USERS
         await db.execute('''
-  CREATE TABLE users(
-    user_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    full_name TEXT NOT NULL,
-    email TEXT UNIQUE,
-    phone_number TEXT,
-    password_hash TEXT,
-    role TEXT,
-    ethnicity TEXT,       -- Thêm cột dân tộc
-    city TEXT,            -- Thêm cột thành phố
-    ward TEXT,            -- Thêm cột phường/xã
-    detail_address TEXT,  -- Thêm cột địa chỉ chi tiết
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP
-  );
-''');
+          CREATE TABLE users(
+            user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            full_name TEXT NOT NULL,
+            email TEXT UNIQUE,
+            phone_number TEXT,
+            password_hash TEXT,
+            role TEXT,
+            ethnicity TEXT,
+            city TEXT,
+            ward TEXT,
+            detail_address TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+          );
+        ''');
 
         // 2. PATIENT PROFILES
         await db.execute('''
@@ -51,7 +50,7 @@ class AppDatabase {
             relationship TEXT,
             dob TEXT,
             phone_number TEXT,
-            diagnosis TEXT, -- Đảm bảo có dòng này!
+            diagnosis TEXT,
             FOREIGN KEY(user_id) REFERENCES users(user_id)
           );
         ''');
@@ -84,6 +83,14 @@ class AppDatabase {
             specialty_id INTEGER,
             clinic_id INTEGER,
             bio TEXT,
+            position TEXT,
+            workplace TEXT,
+            services TEXT,
+            education TEXT,
+            work_experience_detail TEXT,
+            organizations TEXT,
+            research_works TEXT,
+            avatar TEXT,
             experience_years INTEGER,
             rating REAL,
             price INTEGER DEFAULT 0,
@@ -141,9 +148,9 @@ class AppDatabase {
   }
 
   Future<void> _seedData(Database db) async {
-    print("--- ĐANG NẠP DỮ LIỆU MẪU CÓ MẬT KHẨU ---");
+    print("--- ĐANG NẠP DỮ LIỆU MẪU ---");
 
-    // 1. Chèn Users với mật khẩu mặc định là '123456'
+    // 1. USERS
     await db.insert('users', {
       'full_name': 'Admin System',
       'email': 'admin@clinic.com',
@@ -156,23 +163,31 @@ class AppDatabase {
       'email': 'khaihuy@student.com',
       'password_hash': '123456',
       'role': 'Patient',
-    }); // id: 2
+      'phone_number': '0912345678',
+      'city': 'TP.HCM',
+    });
 
-    await db.insert('users', {
-      'full_name': 'Bác sĩ Lê Mạnh Hùng',
-      'email': 'hung.le@clinic.com',
-      'password_hash': '123456',
-      'role': 'Doctor',
-    }); // id: 3
+    final doctorNames = [
+      'GS.TS.BS Đỗ Tất Cường', 'BS. Lê Mạnh Hùng', 'BS. Phạm Minh Anh', 'BS. Nguyễn Hoàng Nam',
+      'BS. Trần Thu Hà', 'BS. Võ Quốc Bảo', 'BS. Đặng Gia Hân', 'BS. Bùi Thành Đạt',
+      'BS. Lý Minh Khang', 'BS. Phan Ngọc Mai', 'BS. Hồ Thanh Tùng', 'BS. Đỗ Khánh Linh',
+      'BS. Trương Mỹ Nhân', 'BS. Lê Quang Liêm', 'BS. Nguyễn Thị Kim', 'BS. Hoàng Văn Thái',
+      'BS. Vũ Đức Đam', 'BS. Trần Ngọc Ân', 'BS. Nguyễn Huy Thắng', 'BS. Đào Thế Duy'
+    ];
 
-    await db.insert('users', {
-      'full_name': 'Bác sĩ Phạm Minh Anh',
-      'email': 'anh.pham@clinic.com',
-      'password_hash': '123456',
-      'role': 'Doctor',
-    }); // id: 4
+    final doctorUserIds = <int>[];
+    for (int i = 0; i < doctorNames.length; i++) {
+      final id = await db.insert('users', {
+        'full_name': doctorNames[i],
+        'email': 'doctor${i + 1}@clinic.com',
+        'password_hash': '123456',
+        'role': 'Doctor',
+        'phone_number': '0901000${(i + 1).toString().padLeft(3, '0')}',
+      });
+      doctorUserIds.add(id);
+    }
 
-    // 2. Chèn Hồ sơ bệnh nhân
+    // 2. HỒ SƠ BỆNH NHÂN
     await db.insert('patient_profiles', {
       'user_id': 2,
       'full_name': 'Khai Huy (Bản thân)',
@@ -180,7 +195,9 @@ class AppDatabase {
       'relationship': 'Bản thân',
       'dob': '2002-10-20',
       'phone_number': '0912345678',
+      'diagnosis': 'Khám sức khỏe định kỳ',
     });
+
     await db.insert('patient_profiles', {
       'user_id': 2,
       'full_name': 'Trần Thị Em',
@@ -188,72 +205,235 @@ class AppDatabase {
       'relationship': 'Em gái',
       'dob': '2010-05-12',
       'phone_number': '0988888888',
+      'diagnosis': 'Theo dõi tai mũi họng',
     });
 
-    // 3. Chèn Chuyên khoa
-    await db.insert('specialties', {
-      'name': 'Nội Tổng Quát',
-      'description': 'Khám sàng lọc, tư vấn sức khỏe tổng thể',
-    });
-    await db.insert('specialties', {
-      'name': 'Tim Mạch',
-      'description': 'Chuyên khoa về tim và huyết áp',
-    });
-    await db.insert('specialties', {
-      'name': 'Nhi Khoa',
-      'description': 'Chăm sóc sức khỏe toàn diện cho trẻ em',
-    });
+    // 3. CHUYÊN KHOA
+    final specialties = [
+      ['Nội Tổng Quát', 'Khám sàng lọc, tư vấn sức khỏe tổng thể'],
+      ['Tim Mạch', 'Khám và điều trị bệnh lý tim mạch'],
+      ['Nhi Khoa', 'Chăm sóc sức khỏe trẻ em'],
+      ['Da Liễu', 'Khám và điều trị các bệnh da'],
+      ['Tai Mũi Họng', 'Khám tai mũi họng'],
+      ['Thần Kinh', 'Khám và điều trị bệnh thần kinh'],
+      ['Xương Khớp', 'Khám cơ xương khớp'],
+      ['Tiêu Hóa', 'Khám tiêu hóa và gan mật'],
+    ];
 
-    // 4. Chèn Phòng khám
-    await db.insert('clinics', {
-      'name': 'Phòng khám Đa khoa Quốc tế',
-      'address': '456 Võ Văn Kiệt, Quận 1',
-      'operating_hours': '08:00 - 20:00',
-    });
-    await db.insert('clinics', {
-      'name': 'Bệnh viện Vinmec',
-      'address': '208 Nguyễn Hữu Cảnh, Bình Thạnh',
-      'operating_hours': '24/7',
-    });
+    for (var s in specialties) {
+      await db.insert('specialties', {'name': s[0], 'description': s[1]});
+    }
 
-    // 5. Chèn Bác sĩ
-    await db.insert('doctors', {
-      'user_id': 3,
-      'specialty_id': 1,
-      'clinic_id': 1,
-      'bio': '15 năm kinh nghiệm tại BV Bạch Mai',
-      'experience_years': 15,
-      'rating': 4.9,
-      'price': 300000,
-    });
-    await db.insert('doctors', {
-      'user_id': 4,
-      'specialty_id': 3,
-      'clinic_id': 2,
-      'bio': 'Chuyên gia tâm lý và sức khỏe nhi nhi',
-      'experience_years': 8,
-      'rating': 4.7,
-      'price': 500000,
-    });
+    // 4. PHÒNG KHÁM
+    final clinics = [
+      ['Phòng khám Đa khoa Quốc tế', '456 Võ Văn Kiệt, Quận 1', '08:00 - 20:00', '02838220001'],
+      ['Bệnh viện Vinmec Smart City', 'Hà Nội', '24/7', '02439743556'],
+      ['Bệnh viện Đại học Y Dược', '215 Hồng Bàng, Quận 5', '07:00 - 17:00', '02838554269'],
+      ['Bệnh viện Chợ Rẫy', '201B Nguyễn Chí Thanh, Quận 5', '24/7', '02838554137'],
+    ];
 
-    // 6. Lịch khám
-    int schId = await db.insert('schedules', {
-      'doctor_id': 1,
-      'available_date': '2026-03-20',
-      'start_time': '08:00',
-      'end_time': '12:00',
-    });
-
-    List<String> hours = ['08:00', '08:30', '09:00', '09:30', '10:00', '10:30'];
-    for (String h in hours) {
-      await db.insert('time_slots', {
-        'schedule_id': schId,
-        'start_time': h,
-        'end_time': '',
-        'is_booked': 0,
+    for (var c in clinics) {
+      await db.insert('clinics', {
+        'name': c[0],
+        'address': c[1],
+        'operating_hours': c[2],
+        'phone_number': c[3],
       });
     }
 
-    print("--- DỮ LIỆU MẪU ĐÃ ĐƯỢC CẬP NHẬT MẬT KHẨU ---");
+    // 5. BÁC SĨ (Mỗi chuyên khoa 2-3 bác sĩ)
+    final doctorsData = [
+      // Nội Tổng Quát (ID: 1)
+      {'user': 0, 'spec': 1, 'clinic': 1, 'price': 500000, 'exp': 20, 'rating': 5.0, 'pos': 'Chủ tịch Hội đồng cố vấn'},
+      {'user': 8, 'spec': 1, 'clinic': 2, 'price': 300000, 'exp': 10, 'rating': 4.7, 'pos': 'Bác sĩ Nội khoa'},
+      {'user': 16, 'spec': 1, 'clinic': 3, 'price': 400000, 'exp': 15, 'rating': 4.8, 'pos': 'Bác sĩ Cao cấp'},
+
+      // Tim Mạch (ID: 2)
+      {'user': 1, 'spec': 2, 'clinic': 3, 'price': 700000, 'exp': 25, 'rating': 4.9, 'pos': 'Bác sĩ Tim mạch'},
+      {'user': 9, 'spec': 2, 'clinic': 4, 'price': 600000, 'exp': 18, 'rating': 4.8, 'pos': 'Bác sĩ Tim mạch'},
+      {'user': 17, 'spec': 2, 'clinic': 1, 'price': 550000, 'exp': 12, 'rating': 4.6, 'pos': 'Bác sĩ Tim mạch'},
+
+      // Nhi Khoa (ID: 3)
+      {'user': 2, 'spec': 3, 'clinic': 2, 'price': 450000, 'exp': 15, 'rating': 4.8, 'pos': 'Bác sĩ Nhi khoa'},
+      {'user': 10, 'spec': 3, 'clinic': 3, 'price': 350000, 'exp': 8, 'rating': 4.7, 'pos': 'Bác sĩ Nhi khoa'},
+
+      // Da Liễu (ID: 4)
+      {'user': 3, 'spec': 4, 'clinic': 1, 'price': 400000, 'exp': 12, 'rating': 4.7, 'pos': 'Bác sĩ Da liễu'},
+      {'user': 11, 'spec': 4, 'clinic': 4, 'price': 500000, 'exp': 14, 'rating': 4.9, 'pos': 'Bác sĩ Da liễu'},
+      {'user': 18, 'spec': 4, 'clinic': 2, 'price': 420000, 'exp': 9, 'rating': 4.5, 'pos': 'Bác sĩ Da liễu'},
+
+      // Tai Mũi Họng (ID: 5)
+      {'user': 4, 'spec': 5, 'clinic': 1, 'price': 350000, 'exp': 10, 'rating': 4.8, 'pos': 'Bác sĩ Tai Mũi Họng'},
+      {'user': 12, 'spec': 5, 'clinic': 3, 'price': 380000, 'exp': 11, 'rating': 4.6, 'pos': 'Bác sĩ Tai Mũi Họng'},
+
+      // Thần Kinh (ID: 6)
+      {'user': 5, 'spec': 6, 'clinic': 4, 'price': 600000, 'exp': 20, 'rating': 4.9, 'pos': 'Bác sĩ Thần kinh'},
+      {'user': 13, 'spec': 6, 'clinic': 2, 'price': 550000, 'exp': 16, 'rating': 4.7, 'pos': 'Bác sĩ Thần kinh'},
+
+      // Xương Khớp (ID: 7)
+      {'user': 6, 'spec': 7, 'clinic': 3, 'price': 480000, 'exp': 13, 'rating': 4.8, 'pos': 'Bác sĩ Xương khớp'},
+      {'user': 14, 'spec': 7, 'clinic': 1, 'price': 450000, 'exp': 10, 'rating': 4.7, 'pos': 'Bác sĩ Xương khớp'},
+
+      // Tiêu Hóa (ID: 8)
+      {'user': 7, 'spec': 8, 'clinic': 4, 'price': 420000, 'exp': 14, 'rating': 4.8, 'pos': 'Bác sĩ Tiêu hóa'},
+      {'user': 15, 'spec': 8, 'clinic': 2, 'price': 400000, 'exp': 12, 'rating': 4.6, 'pos': 'Bác sĩ Tiêu hóa'},
+      {'user': 19, 'spec': 8, 'clinic': 3, 'price': 430000, 'exp': 11, 'rating': 4.7, 'pos': 'Bác sĩ Tiêu hóa'},
+    ];
+
+    for (var d in doctorsData) {
+      await db.insert('doctors', {
+        'user_id': doctorUserIds[d['user'] as int],
+        'specialty_id': d['spec'],
+        'clinic_id': d['clinic'],
+        'price': d['price'],
+        'experience_years': d['exp'],
+        'rating': d['rating'],
+        'bio': 'Bác sĩ chuyên khoa giàu kinh nghiệm, tận tâm với bệnh nhân.',
+        'position': d['pos'],
+        'workplace': clinics[(d['clinic'] as int) - 1][0],
+        'avatar': 'assets/images/doctors/doctor_${(d['user'] as int) % 12 + 1}.png',
+        'education': 'Tốt nghiệp Đại học Y Dược.',
+        'services': 'Khám và tư vấn chuyên khoa.',
+      });
+    }
+
+    // 6. LỊCH KHÁM MẪU (Cho 5 bác sĩ đầu tiên)
+    for (int i = 1; i <= 5; i++) {
+      final scheduleId = await db.insert('schedules', {
+        'doctor_id': i,
+        'available_date': '2026-03-20',
+        'start_time': '08:00',
+        'end_time': '12:00',
+      });
+
+      for (int j = 8; j < 11; j++) {
+        await db.insert('time_slots', {
+          'schedule_id': scheduleId,
+          'start_time': '${j.toString().padLeft(2, '0')}:00',
+          'end_time': '${j.toString().padLeft(2, '0')}:30',
+          'is_booked': 0,
+        });
+      }
+    }
+
+    print("--- DỮ LIỆU MẪU ĐÃ ĐƯỢC TẠO ---");
+  }
+
+  Future<List<Map<String, dynamic>>> getAllDoctors() async {
+    final database = await db;
+    return await database.rawQuery('''
+      SELECT 
+        d.doctor_id,
+        u.full_name,
+        u.email,
+        u.phone_number,
+        s.name AS specialty_name,
+        c.name AS clinic_name,
+        c.address AS clinic_address,
+        c.phone_number AS clinic_phone,
+        d.bio,
+        d.position,
+        d.workplace,
+        d.services,
+        d.education,
+        d.work_experience_detail,
+        d.organizations,
+        d.research_works,
+        d.avatar,
+        d.experience_years,
+        d.rating,
+        d.price
+      FROM doctors d
+      JOIN users u ON d.user_id = u.user_id
+      JOIN specialties s ON d.specialty_id = s.specialty_id
+      JOIN clinics c ON d.clinic_id = c.clinic_id
+      ORDER BY d.rating DESC, d.experience_years DESC
+    ''');
+  }
+
+  Future<Map<String, dynamic>?> getDoctorById(int doctorId) async {
+    final database = await db;
+    final result = await database.rawQuery('''
+      SELECT 
+        d.doctor_id,
+        u.full_name,
+        u.email,
+        u.phone_number,
+        s.name AS specialty_name,
+        c.name AS clinic_name,
+        c.address AS clinic_address,
+        c.phone_number AS clinic_phone,
+        d.bio,
+        d.position,
+        d.workplace,
+        d.services,
+        d.education,
+        d.work_experience_detail,
+        d.organizations,
+        d.research_works,
+        d.avatar,
+        d.experience_years,
+        d.rating,
+        d.price
+      FROM doctors d
+      JOIN users u ON d.user_id = u.user_id
+      JOIN specialties s ON d.specialty_id = s.specialty_id
+      JOIN clinics c ON d.clinic_id = c.clinic_id
+      WHERE d.doctor_id = ?
+      LIMIT 1
+    ''', [doctorId]);
+
+    if (result.isEmpty) return null;
+    return result.first;
+  }
+
+  Future<List<Map<String, dynamic>>> getDoctorsBySpecialty(int specialtyId) async {
+    final database = await db;
+    return await database.rawQuery('''
+      SELECT 
+        d.doctor_id,
+        u.full_name,
+        s.name AS specialty_name,
+        c.name AS clinic_name,
+        d.bio,
+        d.position,
+        d.avatar,
+        d.experience_years,
+        d.rating,
+        d.price
+      FROM doctors d
+      JOIN users u ON d.user_id = u.user_id
+      JOIN specialties s ON d.specialty_id = s.specialty_id
+      JOIN clinics c ON d.clinic_id = c.clinic_id
+      WHERE d.specialty_id = ?
+      ORDER BY d.rating DESC, d.experience_years DESC
+    ''', [specialtyId]);
+  }
+
+  Future<List<Map<String, dynamic>>> getDoctorsBySpecialtyAndClinic(int specialtyId, int clinicId) async {
+    final database = await db;
+    return await database.rawQuery('''
+      SELECT 
+        d.doctor_id,
+        u.full_name,
+        s.name AS specialty_name,
+        c.name AS clinic_name,
+        d.bio,
+        d.position,
+        d.avatar,
+        d.experience_years,
+        d.rating,
+        d.price
+      FROM doctors d
+      JOIN users u ON d.user_id = u.user_id
+      JOIN specialties s ON d.specialty_id = s.specialty_id
+      JOIN clinics c ON d.clinic_id = c.clinic_id
+      WHERE d.specialty_id = ? AND d.clinic_id = ?
+      ORDER BY d.rating DESC, d.experience_years DESC
+    ''', [specialtyId, clinicId]);
+  }
+
+  Future<List<Map<String, dynamic>>> getAllDoctorsWithDetails() async {
+    return getAllDoctors();
   }
 }

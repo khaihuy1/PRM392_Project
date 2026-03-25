@@ -35,7 +35,6 @@ class PatientProfile {
     'user_id': userId,
     'full_name': fullName,
     'relationship': relationship,
-    'relationship': relationship,
     'dob': dob,
     'phone_number': phoneNumber,
     'gender': gender,

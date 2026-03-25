@@ -10,7 +10,7 @@ class SelectDoctorScreen extends StatefulWidget {
   const SelectDoctorScreen({
     super.key,
     required this.specialtyId,
-    required this.clinicId
+    required this.clinicId,
   });
 
   @override
@@ -19,18 +19,50 @@ class SelectDoctorScreen extends StatefulWidget {
 
 class _SelectDoctorScreenState extends State<SelectDoctorScreen> {
   final DoctorRepository _doctorRepo = DoctorRepository();
+  final TextEditingController _searchController = TextEditingController();
+
   Doctor? selectedDoctor;
+  String _searchQuery = '';
+  late Future<List<Doctor>> _doctorsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _doctorsFuture = _doctorRepo.getDoctorsBySpecialtyAndClinic(
+      widget.specialtyId,
+      widget.clinicId,
+    );
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  int _doctorPrimaryKey(Doctor doctor) {
+    return doctor.doctorId;
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: _buildAppBar(),
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.white,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          'Đặt Lịch Khám',
+          style: TextStyle(color: Colors.black),
+        ),
+      ),
       body: Column(
         children: [
-          _buildProgress(),
-          const SizedBox(height: 12),
-          _buildStepIndicator(),
+          _buildProgressIndicator(),
           const SizedBox(height: 16),
           Expanded(
             child: Padding(
@@ -42,17 +74,15 @@ class _SelectDoctorScreenState extends State<SelectDoctorScreen> {
                     'Chọn Bác Sĩ',
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(height: 4),
                   const Text(
                     'Đội ngũ bác sĩ chuyên khoa giàu kinh nghiệm',
-                    style: TextStyle(color: Colors.grey),
+                    style: TextStyle(color: Colors.grey, fontSize: 14),
                   ),
-                  const SizedBox(height: 12),
-                  _buildSearch(),
-                  const SizedBox(height: 12),
-                  // Gọi Database lọc theo cả 2 ID
+                  const SizedBox(height: 16),
+                  _buildSearchField(),
+                  const SizedBox(height: 16),
                   Expanded(child: _buildDoctorList()),
-                  _buildActions(),
+                  _buildBottomActions(),
                 ],
               ),
             ),
@@ -62,38 +92,68 @@ class _SelectDoctorScreenState extends State<SelectDoctorScreen> {
     );
   }
 
-  // ===================== LOGIC CALL DATABASE =====================
+  Widget _buildSearchField() {
+    return TextField(
+      controller: _searchController,
+      onChanged: (value) {
+        setState(() {
+          _searchQuery = value.trim().toLowerCase();
+        });
+      },
+      decoration: InputDecoration(
+        hintText: 'Tìm tên bác sĩ...',
+        prefixIcon: const Icon(Icons.search, color: Colors.grey),
+        filled: true,
+        fillColor: Colors.grey.shade100,
+        contentPadding: const EdgeInsets.symmetric(vertical: 0),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+      ),
+    );
+  }
 
   Widget _buildDoctorList() {
     return FutureBuilder<List<Doctor>>(
-      future: _doctorRepo.getDoctorsBySpecialtyAndClinic(
-          widget.specialtyId,
-          widget.clinicId
-      ),
+      future: _doctorsFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
-        if (snapshot.hasError) return Center(child: Text('Lỗi: ${snapshot.error}'));
-        if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const Center(child: Text('Không tìm thấy bác sĩ phù hợp tại cơ sở này.'));
+
+        if (snapshot.hasError) {
+          return Center(child: Text('Lỗi: ${snapshot.error}'));
         }
 
-        final doctors = snapshot.data!;
+        final allDoctors = snapshot.data ?? [];
+        final filteredDoctors = allDoctors.where((doc) {
+          return doc.fullName.toLowerCase().contains(_searchQuery);
+        }).toList();
+
+        if (filteredDoctors.isEmpty) {
+          return const Center(
+            child: Text('Không tìm thấy bác sĩ nào phù hợp.'),
+          );
+        }
+
         return ListView.builder(
-          itemCount: doctors.length,
+          itemCount: filteredDoctors.length,
           itemBuilder: (context, index) {
-            final item = doctors[index];
-            final isSelected = selectedDoctor?.id == item.id;
+            final doctor = filteredDoctors[index];
+            final isSelected = selectedDoctor != null &&
+                _doctorPrimaryKey(selectedDoctor!) == _doctorPrimaryKey(doctor);
 
             return GestureDetector(
-              onTap: () => setState(() => selectedDoctor = item),
+              onTap: () => setState(() => selectedDoctor = doctor),
               child: Container(
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
-                  color: isSelected ? Colors.blue.withOpacity(0.05) : Colors.white,
+                  color: isSelected
+                      ? Colors.blue.withOpacity(0.05)
+                      : Colors.white,
                   border: Border.all(
                     color: isSelected ? Colors.blue : Colors.grey.shade200,
                     width: 1.5,
@@ -103,8 +163,12 @@ class _SelectDoctorScreenState extends State<SelectDoctorScreen> {
                   children: [
                     CircleAvatar(
                       radius: 30,
-                      backgroundColor: Colors.blue.shade100,
-                      child: const Icon(Icons.person, size: 35, color: Colors.blue),
+                      backgroundColor: Colors.blue.shade50,
+                      child: const Icon(
+                        Icons.person,
+                        size: 35,
+                        color: Colors.blue,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -112,22 +176,33 @@ class _SelectDoctorScreenState extends State<SelectDoctorScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            item.fullName,
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            doctor.fullName,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                          const SizedBox(height: 4),
                           Text(
-                            '${item.experienceYears} năm kinh nghiệm',
-                            style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                            '${doctor.experienceYears} năm kinh nghiệm',
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 13,
+                            ),
                           ),
                           const SizedBox(height: 4),
                           Row(
                             children: [
-                              const Icon(Icons.star, color: Colors.orange, size: 16),
+                              const Icon(
+                                Icons.star,
+                                color: Colors.orange,
+                                size: 16,
+                              ),
                               const SizedBox(width: 4),
                               Text(
-                                item.rating.toString(),
-                                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                                doctor.rating.toStringAsFixed(1),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ],
                           ),
@@ -135,9 +210,12 @@ class _SelectDoctorScreenState extends State<SelectDoctorScreen> {
                       ),
                     ),
                     Radio<int>(
-                      value: item.id!,
-                      groupValue: selectedDoctor?.id,
-                      onChanged: (v) => setState(() => selectedDoctor = item),
+                      value: _doctorPrimaryKey(doctor),
+                      groupValue: selectedDoctor == null
+                          ? null
+                          : _doctorPrimaryKey(selectedDoctor!),
+                      activeColor: Colors.blue,
+                      onChanged: (_) => setState(() => selectedDoctor = doctor),
                     ),
                   ],
                 ),
@@ -149,103 +227,67 @@ class _SelectDoctorScreenState extends State<SelectDoctorScreen> {
     );
   }
 
-  // ===================== UI WIDGETS =====================
-
-  AppBar _buildAppBar() {
-    return AppBar(
-      elevation: 0,
-      backgroundColor: Colors.white,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: Colors.black),
-        onPressed: () => Navigator.pop(context),
-      ),
-      title: const Text('Đặt Lịch Khám', style: TextStyle(color: Colors.black)),
-    );
-  }
-
-  Widget _buildProgress() {
-    return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Bước 3 / 5'),
-          SizedBox(height: 6),
-          LinearProgressIndicator(
-            value: 0.6,
-            backgroundColor: Color(0xFFE0E0E0),
-            color: Colors.blue,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStepIndicator() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(5, (index) {
-        final isCompleted = index < 2;
-        final isActive = index == 2;
-        return Row(
-          children: [
-            CircleAvatar(
-              radius: 14,
-              backgroundColor: isActive || isCompleted ? Colors.blue : Colors.grey.shade300,
-              child: isCompleted
-                  ? const Icon(Icons.check, size: 16, color: Colors.white)
-                  : Text('${index + 1}', style: TextStyle(color: isActive ? Colors.white : Colors.black54, fontSize: 12)),
-            ),
-            if (index != 4) Container(width: 30, height: 2, color: index < 2 ? Colors.blue : Colors.grey.shade300),
-          ],
-        );
-      }),
-    );
-  }
-
-  Widget _buildSearch() {
-    return TextField(
-      decoration: InputDecoration(
-        hintText: 'Tìm tên bác sĩ...',
-        prefixIcon: const Icon(Icons.search),
-        filled: true,
-        fillColor: Colors.grey.shade100,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-      ),
-    );
-  }
-
-  Widget _buildActions() {
+  Widget _buildProgressIndicator() {
     return Column(
       children: [
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [Text("Bước 3 / 5"), Text("60%")],
+          ),
+        ),
+        LinearProgressIndicator(
+          value: 0.6,
+          backgroundColor: Colors.grey.shade200,
+          color: Colors.blue,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBottomActions() {
+    return Column(
+      children: [
+        const SizedBox(height: 12),
         SizedBox(
           width: double.infinity,
+          height: 50,
           child: ElevatedButton(
-            onPressed: selectedDoctor == null ? null : () {
-              // Chuyển sang màn hình chọn ngày giờ
-              Navigator.push(context, MaterialPageRoute(builder: (context) => SelectDateTimeScreen(doctorId: selectedDoctor!.id!)));
+            onPressed: selectedDoctor == null
+                ? null
+                : () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => SelectDateTimeScreen(
+                    doctorId: _doctorPrimaryKey(selectedDoctor!),
+                  ),
+                ),
+              );
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
-            child: const Text('Tiếp Tục', style: TextStyle(color: Colors.white)),
+            child: const Text(
+              'Tiếp Tục',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ),
         const SizedBox(height: 8),
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton(
-            onPressed: () => Navigator.pop(context),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            child: const Text('Quay Lại'),
-          ),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Quay Lại', style: TextStyle(color: Colors.blue)),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
       ],
     );
   }

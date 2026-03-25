@@ -54,7 +54,7 @@ class BookingController extends ChangeNotifier {
 
     final appointment = Appointment(
       patientId: currentUserId,
-      doctorId: selectedDoctor!.id!,
+      doctorId: selectedDoctor!.doctorId,
       slotId: selectedSlot!.id!,
       profileId: selectedProfile!.id!,
       reason: reason,
