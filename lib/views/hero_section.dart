@@ -1,9 +1,26 @@
 import 'package:flutter/material.dart';
-import 'package:projectnhom/views/booking_schedule/select_specialty_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:projectnhom/views/main_screen.dart';
 
 class HeroSection extends StatelessWidget {
   const HeroSection({super.key});
+
+  Future<void> _navigateToBooking(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    // Lấy userId thực tế đã lưu từ lúc đăng nhập, mặc định là 1 nếu không tìm thấy
+    final int userId = prefs.getInt('user_id') ?? 1;
+
+    if (!context.mounted) return;
+
+    // Chuyển hướng về MainScreen và chọn Tab index 1 (Đặt lịch của Bệnh nhân)
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MainScreen(userId: userId, initialIndex: 1),
+      ),
+      (route) => false,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +35,7 @@ class HeroSection extends StatelessWidget {
               fontSize: 32,
               fontWeight: FontWeight.bold,
               color: Color(0xFF1A237E),
-              height: 1.3, // Chiều cao dòng
+              height: 1.3,
             ),
           ),
           const SizedBox(height: 16),
@@ -29,20 +46,11 @@ class HeroSection extends StatelessWidget {
           ),
           const SizedBox(height: 32),
 
-          // Nút Đặt Lịch Khám Ngay
           SizedBox(
             width: 250,
             height: 50,
             child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const MainScreen(userId: 2, initialIndex: 1), // Nhảy vào Tab 1 (Đặt lịch)
-                    ),
-                        (route) => false, // Xóa hết các trang cũ để tránh bị lỗi nút quay lại
-                  );
-                },
+              onPressed: () => _navigateToBooking(context),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF2962FF),
                 shape: RoundedRectangleBorder(

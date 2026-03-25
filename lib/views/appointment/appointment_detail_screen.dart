@@ -8,7 +8,6 @@ class AppointmentDetailScreen extends StatelessWidget {
   AppointmentDetailScreen({super.key, required this.appointment});
 
   void _handleCancel(BuildContext context) async {
-    // Hiển thị hộp thoại xác nhận
     bool confirm = await showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -30,50 +29,79 @@ class AppointmentDetailScreen extends StatelessWidget {
     if (confirm) {
       bool success = await _repo.cancelAppointment(
         appointment['appointment_id'],
-        appointment['slot_id'], // Bạn nhớ JOIN thêm slot_id ở câu SQL getAll nhé
+        appointment['slot_id'],
       );
 
       if (success) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Đã hủy lịch thành công')));
-        Navigator.pop(
-          context,
-          true,
-        ); // Quay lại trang danh sách và báo cần load lại
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đã hủy lịch thành công')));
+        Navigator.pop(context, true);
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // Kiểm tra xem đây là màn hình của Bác sĩ hay Bệnh nhân dựa trên dữ liệu hiện có
+    bool isDoctorView = appointment['doctor_name'] == null;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Chi tiết lịch khám')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        title: const Text('Chi tiết lịch khám', style: TextStyle(color: Colors.black)),
+        backgroundColor: Colors.white,
+        elevation: 0.5,
+        iconTheme: const IconThemeData(color: Colors.black),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _infoRow('Bác sĩ', appointment['doctor_name']),
-            _infoRow('Bệnh nhân', appointment['patient_name']),
-            _infoRow('Ngày khám', appointment['available_date']),
-            _infoRow(
-              'Giờ khám',
-              "${appointment['start_time']} - ${appointment['end_time']}",
+            Center(
+              child: Container(
+                padding: const EdgeInsets.all(15),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.event_available, size: 50, color: Colors.blue),
+              ),
             ),
-            _infoRow('Trạng thái', appointment['status']),
-            const Spacer(),
-            if (appointment['status'] == 'Confirmed' ||
-                appointment['status'] == 'Pending')
+            const SizedBox(height: 30),
+            
+            if (!isDoctorView) _infoRow('Bác sĩ chuyên khoa', appointment['doctor_name'] ?? 'Chưa xác định'),
+            _infoRow('Tên bệnh nhân', appointment['patient_name'] ?? 'Chưa xác định'),
+            
+            const Divider(height: 30),
+            
+            Row(
+              children: [
+                Expanded(child: _infoRow('Ngày khám', appointment['available_date'] ?? '')),
+                Expanded(child: _infoRow('Giờ khám', "${appointment['start_time']} - ${appointment['end_time']}")),
+              ],
+            ),
+            
+            _infoRow('Trạng thái hiện tại', _getStatusText(appointment['status'])),
+            
+            _infoRow('Lý do khám / Triệu chứng', appointment['reason'] ?? 'Không có thông tin bổ sung'),
+            
+            const SizedBox(height: 40),
+            
+            if (appointment['status'] == 'Confirmed' || appointment['status'] == 'Pending' || appointment['status'] == 'Chờ khám')
               SizedBox(
                 width: double.infinity,
+                height: 50,
                 child: ElevatedButton(
                   onPressed: () => _handleCancel(context),
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                  child: const Text(
-                    'HỦY LỊCH KHÁM',
-                    style: TextStyle(color: Colors.white),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red[50],
+                    foregroundColor: Colors.red,
+                    elevation: 0,
+                    side: const BorderSide(color: Colors.red),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
+                  child: const Text('HỦY LỊCH HẸN NÀY', style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ),
           ],
@@ -82,16 +110,28 @@ class AppointmentDetailScreen extends StatelessWidget {
     );
   }
 
+  String _getStatusText(String? status) {
+    switch (status) {
+      case 'Pending': return 'Đang chờ xác nhận';
+      case 'Chờ khám': return 'Đang chờ khám';
+      case 'Confirmed': return 'Đã xác nhận lịch';
+      case 'Completed': return 'Đã hoàn thành ca khám';
+      case 'Cancelled': return 'Đã hủy lịch';
+      default: return status ?? 'Chưa xác định';
+    }
+  }
+
   Widget _infoRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.symmetric(vertical: 12.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(color: Colors.grey, fontSize: 14)),
+          Text(label, style: const TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.w500)),
+          const SizedBox(height: 5),
           Text(
             value,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
           ),
         ],
       ),
